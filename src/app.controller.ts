@@ -8,7 +8,7 @@ class HealthCheckResponse {
 @ApiTags('Health check')
 @Controller()
 export class AppController {
-  @Get()
+  @Get('/healthcheck')
   @ApiOperation({ description: 'healthcheck endpoint' })
   @ApiResponse({ status: 200, type: HealthCheckResponse })
   getHello(): HealthCheckResponse {

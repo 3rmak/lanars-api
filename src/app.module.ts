@@ -11,6 +11,7 @@ import { ImageModule } from './modules/image/image.module';
 import { PortfolioModule } from './modules/portfolio/portfolio.module';
 import { UserModule } from './modules/user/user.module';
 import { S3Module } from './s3/s3.module';
+import { MigrationsModule } from './database/migrations.module';
 
 import { AppController } from './app.controller';
 
@@ -40,6 +41,7 @@ import { Comment } from './modules/comment/comment.model';
         autoLoadModels: true,
       }),
     }),
+    MigrationsModule.register(),
     S3Module.registerAsync(),
     AuthModule,
     CommentModule,
