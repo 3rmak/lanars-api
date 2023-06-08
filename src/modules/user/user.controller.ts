@@ -2,7 +2,7 @@ import { Body, Controller, Post, Delete } from '@nestjs/common/decorators';
 import { UserService } from './user.service';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
-import { AuthRegisterDto } from './dto/create-user.dto';
+import { CreateUserDto } from './dto/create-user.dto';
 import { UserResponseDto } from './dto/user.response.dto';
 import { RequestUser } from '../../shared/decorators/user.decorator';
 import { PayloadUser } from '../../shared/payload-user.interface';
@@ -17,7 +17,7 @@ export class UserController {
   @Post('/create')
   @ApiOperation({ summary: 'User creation endpoint' })
   @ApiResponse({ status: 201, type: UserResponseDto })
-  public async createUser(@Body() body: AuthRegisterDto): Promise<UserResponseDto> {
+  public async createUser(@Body() body: CreateUserDto): Promise<UserResponseDto> {
     const user = await this.usersService.createUser(body);
     return user.toDto();
   }

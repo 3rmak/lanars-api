@@ -1,33 +1,26 @@
 import { ForbiddenException, InternalServerErrorException, NotFoundException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { Injectable } from '@nestjs/common/decorators';
 import { InjectModel } from '@nestjs/sequelize';
 
 import { Sequelize } from 'sequelize-typescript';
 
 import { S3Service } from '../../s3/s3.service';
-import { PaginationUtility } from '../../shared/utils/pagination.utility';
+import { PaginationSequelizeResponseDto } from '../../shared/utils/pagination.utility';
 
 import { Image } from './image.model';
 import { Portfolio } from '../portfolio/portfolio.model';
 
 import { ImageCreateDto } from './dto/create-image.dto';
-import { PaginationDto } from '../../shared/pagination.dto';
+import { FilteredResponseDto } from '../../shared/dto/filtered-response.dto';
 
 @Injectable()
 export class ImageService {
-  private paginationUtil: PaginationUtility;
-
   constructor(
     @InjectModel(Image) private imageRepository: typeof Image,
     @InjectModel(Portfolio) private readonly portfolioRepository: typeof Portfolio,
     private s3Service: S3Service,
     private sequelize: Sequelize,
-    private configService: ConfigService,
-  ) {
-    const defaultPerPage = Number(configService.get('DEFAULT_PER_PAGE'));
-    this.paginationUtil = new PaginationUtility(defaultPerPage);
-  }
+  ) {}
 
   public async createImage(userId: string, uploadImage: Express.Multer.File, body: ImageCreateDto): Promise<Image> {
     const { portfolioId } = body;
@@ -45,7 +38,7 @@ export class ImageService {
         return image;
       });
     } catch (e) {
-      throw e;
+      throw new InternalServerErrorException(`Image was not created. Error: ${e.message}`);
     }
   }
 
@@ -58,28 +51,41 @@ export class ImageService {
     return image;
   }
 
-  public async getImagesByPortfolioId(portfolioId: string, query: PaginationDto) {
-    const { limit, offset } = this.paginationUtil.parse(query);
+  public async getImagesByPortfolioId(
+    portfolioId: string,
+    query: PaginationSequelizeResponseDto,
+  ): Promise<FilteredResponseDto<Image>> {
+    const { limit, offset } = query;
 
     try {
-      const portfolioImages = await this.imageRepository.findAll({
+      const { rows, count } = await this.imageRepository.findAndCountAll({
         where: { portfolioId },
         order: [['createdAt', 'DESC']],
         limit,
         offset,
       });
-      return portfolioImages;
+      return {
+        total: count,
+        data: rows,
+      };
     } catch (e) {
       throw new InternalServerErrorException(`Can't extract images from db. Error: ${e.message}`);
     }
   }
 
-  public async getImagesFeed(query: PaginationDto): Promise<Array<Image>> {
-    const { limit, offset } = this.paginationUtil.parse(query);
+  public async getImagesFeed(query: PaginationSequelizeResponseDto): Promise<FilteredResponseDto<Image>> {
+    const { limit, offset } = query;
 
     try {
-      const feedImages = await this.imageRepository.findAll({ limit, offset, order: [['createdAt', 'DESC']] });
-      return feedImages;
+      const { rows, count } = await this.imageRepository.findAndCountAll({
+        limit,
+        offset,
+        order: [['createdAt', 'DESC']],
+      });
+      return {
+        data: rows,
+        total: count,
+      };
     } catch (e) {
       throw new InternalServerErrorException(`Can't extract images from db. Error: ${e.message}`);
     }

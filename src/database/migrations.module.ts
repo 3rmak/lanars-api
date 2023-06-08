@@ -26,7 +26,10 @@ export class MigrationsModule {
   private static initMigrator(sequelize: Sequelize) {
     return new Umzug({
       migrations: {
-        glob: ['migrations/*.ts', { cwd: path.join(process.cwd(), 'src', 'database') }],
+        glob: [
+          'migrations/*.ts',
+          { cwd: path.join(process.cwd(), 'src', 'database'), ignore: 'migrations/*.postgres.migration.ts' },
+        ],
         resolve: ({ name, path }) => {
           // eslint-disable-next-line @typescript-eslint/no-var-requires
           const migration = require(path);

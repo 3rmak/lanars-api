@@ -9,7 +9,7 @@ import * as bcrypt from 'bcrypt';
 import { PortfolioService } from '../portfolio/portfolio.service';
 
 import { User } from './user.model';
-import { AuthRegisterDto } from './dto/create-user.dto';
+import { CreateUserDto } from './dto/create-user.dto';
 
 @Injectable()
 export class UserService {
@@ -22,7 +22,7 @@ export class UserService {
     this.salt = Number(configService.get('HASH_SALT'));
   }
 
-  public async createUser(body: AuthRegisterDto): Promise<User> {
+  public async createUser(body: CreateUserDto): Promise<User> {
     const userCandidate = await this.getUserByEmail(body.email);
     if (userCandidate) {
       throw new BadRequestException('User with this email already exists');

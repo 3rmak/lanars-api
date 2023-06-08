@@ -1,3 +1,4 @@
+import { ConfigService } from '@nestjs/config';
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
@@ -10,11 +11,18 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RequestUser } from '../../shared/decorators/user.decorator';
 import { PayloadUser } from '../../shared/payload-user.interface';
 import { PaginationDto } from '../../shared/pagination.dto';
+import { PaginationUtility } from '../../shared/utils/pagination.utility';
+import { PaginatedResponseDto } from '../../shared/dto/paginated-response.dto';
 
 @ApiTags('Portfolio')
 @Controller('portfolios')
 export class PortfolioController {
-  constructor(private readonly portfolioService: PortfolioService) {}
+  private paginationUtil: PaginationUtility;
+
+  constructor(private readonly portfolioService: PortfolioService, private configService: ConfigService) {
+    const defaultPerPage = Number(configService.get('DEFAULT_PER_PAGE'));
+    this.paginationUtil = new PaginationUtility(defaultPerPage);
+  }
 
   @Post()
   @UseGuards(JwtAuthGuard)
@@ -32,8 +40,20 @@ export class PortfolioController {
   @Get('/:userId')
   @ApiOperation({ summary: 'Get all portfolio endpoint' })
   @ApiResponse({ status: 200, type: Array<PortfolioResponseDto> })
-  public async getAll(@Param() param: any, @Query() query: PaginationDto): Promise<PortfolioResponseDto[]> {
-    return this.portfolioService.getPaginatedPortfolioList(param.userId, query);
+  public async getAll(
+    @Param() param: any,
+    @Query() query: PaginationDto,
+  ): Promise<PaginatedResponseDto<PortfolioResponseDto>> {
+    const sequelizeQuery = this.paginationUtil.parse(query);
+    const { data, total } = await this.portfolioService.getPaginatedPortfolioList(param.userId, sequelizeQuery);
+
+    return {
+      page: sequelizeQuery.page,
+      perPage: sequelizeQuery.limit,
+      totalPages: Math.ceil(total / sequelizeQuery.limit),
+      total,
+      data: data.map((f) => f.toDto()),
+    };
   }
 
   @Patch('/:portfolioId')
